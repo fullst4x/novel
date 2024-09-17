@@ -4,6 +4,8 @@ import { NodeSelection, Plugin } from "@tiptap/pm/state";
 // @ts-ignore
 import { __serializeForClipboard, EditorView } from "@tiptap/pm/view";
 
+let DRAG_VIEW_REFERENCE: EditorView | null = null;
+
 export interface DragHandleOptions {
   /**
    * The width of the drag handle
@@ -78,11 +80,14 @@ function DragHandle(options: DragHandleOptions) {
     event.dataTransfer.setDragImage(node, 0, 0);
 
     view.dragging = { slice, move: event.ctrlKey };
+
+    DRAG_VIEW_REFERENCE = view;
   }
 
   function handleClick(event: MouseEvent, view: EditorView) {
     view.focus();
 
+    console.error(DRAG_VIEW_REFERENCE);
     view.dom.classList.remove("dragging");
 
     const node = nodeDOMAtCoords({
@@ -186,6 +191,12 @@ function DragHandle(options: DragHandleOptions) {
           view.dom.classList.add("dragging");
         },
         drop: (view) => {
+          if (DRAG_VIEW_REFERENCE !== null && DRAG_VIEW_REFERENCE !== view) {
+            DRAG_VIEW_REFERENCE.dispatch(
+              DRAG_VIEW_REFERENCE.state.tr.deleteSelection()
+            );
+          }
+
           view.dom.classList.remove("dragging");
         },
         dragend: (view) => {
